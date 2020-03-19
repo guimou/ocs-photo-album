@@ -20,5 +20,13 @@
   padding: 3px;
 }
 
+.slider {
+  text-align: center;
+}
+
+.slick-prev:before, .slick-next:before { 
+  color: #28a745 !important;
+}
+
 
 

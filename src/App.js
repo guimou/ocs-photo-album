@@ -11,6 +11,9 @@ import FormGroup from 'react-bootstrap/FormGroup';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 
 
 
@@ -104,14 +107,21 @@ class App extends Component {
   }
 
   render() {
+    const settings = {
+      dots: true,
+      infinite: true,
+      speed: 500,
+      slidesToShow: 1,
+      slidesToScroll: 1
+    };
     return (
-      <Container>
+      <Container className="background">
         <Row>
           <Col></Col>
           <Col xs={8}>
             <h2>Welcome to your Photo Album!</h2>
             <p>
-              The first time you upload a picture (png, jpg, gif, less than 2MB), a dedicated bucket will be created for you, and the images will be stored there.<br/>
+              The first time you upload a picture (png, jpg, gif, less than 2MB), a dedicated bucket will be created for you, and the images will be stored there.
               When you reconnect, you'll be automatically linked to this bucket, and you can continue to upload pictures.<br/>
               This basic "authentication" works with a cookie, so if you clear it, you'll simply loose access. In a real application, an authentication mechanism would allow for proper reconnection.<br/>
               The buckets and their content are automatically deleted after 24 hours.
@@ -130,7 +140,24 @@ class App extends Component {
           </Col>
           <Col></Col>
         </Row>
+        <Row>
+        <Col>&nbsp;</Col>
+        </Row>
+        <Row>
+        <Col></Col>
+        <Col xs={8}>
+          <h2>And here are your pictures!</h2>
+          <Slider className="slider" {...settings}>
+              <h1>test</h1>
+              <h2>test2</h2>
+          </Slider>
+        </Col>
+        <Col></Col>
+        </Row>
+        
       </Container>
+
+              
     );
   }
 }
