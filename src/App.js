@@ -11,6 +11,7 @@ import FormGroup from 'react-bootstrap/FormGroup';
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+import Image from 'react-bootstrap/Image';
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
@@ -22,10 +23,21 @@ class App extends Component {
     super(props);
     this.state = {
       selectedFile: null,
-      loaded: 0
+      loaded: 0,
+      nav1: null,
+      nav2: null,
+      slides: ["1584624145438-Screenshot_20200214_093413.png", "1584624213225-Screenshot_20200214_093413.png", "1584624213232-Screenshot_20200214_093542.png", "1584624213241-Screenshot_20200214_093902.png"]
     }
 
   }
+
+  componentDidMount() {
+    this.setState({
+      nav1: this.slider1,
+      nav2: this.slider2
+    });
+  }
+
   checkMimeType = (event) => {
     //getting file object
     let files = event.target.files
@@ -107,57 +119,77 @@ class App extends Component {
   }
 
   render() {
-    const settings = {
-      dots: true,
-      infinite: true,
-      speed: 500,
-      slidesToShow: 1,
-      slidesToScroll: 1
-    };
     return (
       <Container className="background">
         <Row>
-          <Col></Col>
-          <Col xs={8}>
-            <h2>Welcome to your Photo Album!</h2>
+          <Col xs={8}><h2>Welcome to your Photo Album!</h2>
             <p>
               The first time you upload a picture (png, jpg, gif, less than 2MB), a dedicated bucket will be created for you, and the images will be stored there.
-              When you reconnect, you'll be automatically linked to this bucket, and you can continue to upload pictures.<br/>
-              This basic "authentication" works with a cookie, so if you clear it, you'll simply loose access. In a real application, an authentication mechanism would allow for proper reconnection.<br/>
+              When you reconnect, you'll be automatically linked to this bucket, and you can continue to upload pictures.<br />
+              This basic "authentication" works with a cookie, so if you clear it, you'll simply loose access. In a real application, an authentication mechanism would allow for proper reconnection.<br />
               The buckets and their content are automatically deleted after 24 hours.
-            </p>
-            <Form>
-              <FormGroup>
-                <Form.Label>Upload Your File </Form.Label>
-                <Form.Control type="file" multiple onChange={this.onChangeHandler}></Form.Control>
-              </FormGroup>
-              <ToastContainer />
-              <FormGroup>
-                <ProgressBar max="100" color="success" value={this.state.loaded} >{Math.round(this.state.loaded, 2)}%</ProgressBar>
-              </FormGroup>
-              <Button type="button" className="btn btn-success btn-block" onClick={this.onClickHandler}>Upload</Button>
-            </Form>
+            </p></Col>
+          <Col><Form>
+            <FormGroup>
+              <Form.Label>Upload Your File </Form.Label>
+              <Form.Control type="file" multiple onChange={this.onChangeHandler}></Form.Control>
+            </FormGroup>
+            <ToastContainer />
+            <FormGroup>
+              <ProgressBar max="100" color="success" value={this.state.loaded} >{Math.round(this.state.loaded, 2)}%</ProgressBar>
+            </FormGroup>
+            <Button type="button" className="btn btn-success btn-block" onClick={this.onClickHandler}>Upload</Button>
+          </Form></Col>
+        </Row>
+        <Row>
+          <Col>&nbsp;</Col>
+        </Row>
+        <Row>
+          <Col></Col>
+          <Col xs={4}>
+            <h2>And here are your pictures!</h2>
+            <Slider
+              className="slider"
+              asNavFor={this.state.nav1}
+              ref={slider => (this.slider2 = slider)}
+              slidesToShow={3}
+              swipeToSlide={true}
+              focusOnSelect={true}
+              lazyLoad={true}>
+              {this.state.slides.map(function (slide) {
+                var link = "/image/" + slide
+                return (
+                  <Image className="slider-display" src={link}  rounded />
+                );
+              })}/}
+            </Slider>
           </Col>
           <Col></Col>
         </Row>
         <Row>
-        <Col>&nbsp;</Col>
+          <Col>&nbsp;</Col>
         </Row>
         <Row>
-        <Col></Col>
-        <Col xs={8}>
-          <h2>And here are your pictures!</h2>
-          <Slider className="slider" {...settings}>
-              <h1>test</h1>
-              <h2>test2</h2>
-          </Slider>
-        </Col>
-        <Col></Col>
+          <Col></Col>
+          <Col xs={10}>
+            <Slider
+              asNavFor={this.state.nav2}
+              ref={slider => (this.slider1 = slider)}
+              lazyLoad={true}>
+              {this.state.slides.map(function (slide) {
+                var link = "/image/" + slide
+                return (
+                  <Image className="slider-display" src={link}  rounded />
+                );
+              })}/}
+            </Slider>
+          </Col>
+          <Col></Col>
         </Row>
-        
+
       </Container>
 
-              
+
     );
   }
 }

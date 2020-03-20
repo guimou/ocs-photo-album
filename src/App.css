@@ -24,6 +24,16 @@
   text-align: center;
 }
 
+.slider-thumbnail {
+  width: 100px;
+  padding: 5px;
+}
+
+.slider-display {
+  width: 400px;
+  padding: 5px;
+}
+
 .slick-prev:before, .slick-next:before { 
   color: #28a745 !important;
 }
