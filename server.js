@@ -9,7 +9,7 @@ var uuid = require('node-uuid');
 
 // Create an S3 client
 const AWS = require('aws-sdk');
-AWS.config.logger = console;
+// AWS.config.logger = console;
 AWS.config.update({
   region: '',
   accessKeyId: process.env.ACCESS_KEY_ID,

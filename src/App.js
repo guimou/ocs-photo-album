@@ -24,18 +24,31 @@ class App extends Component {
     this.state = {
       selectedFile: null,
       loaded: 0,
-      nav1: null,
-      nav2: null,
-      slides: ["1584624145438-Screenshot_20200214_093413.png", "1584624213225-Screenshot_20200214_093413.png", "1584624213232-Screenshot_20200214_093542.png", "1584624213241-Screenshot_20200214_093902.png"]
+      slides: []
     }
-
   }
 
+      /* slides: ["1584624145438-Screenshot_20200214_093413.png", "1584624213225-Screenshot_20200214_093413.png", "1584624213232-Screenshot_20200214_093542.png", "1584624213241-Screenshot_20200214_093902.png"] */
+
   componentDidMount() {
+    this.loadImagesList();
+  }
+
+  updateSlides(imagesList) {
     this.setState({
-      nav1: this.slider1,
-      nav2: this.slider2
+      slides: imagesList
     });
+  }
+
+  loadImagesList() {
+    axios.get("/listimages/demo-photoalbum")
+    .then(res => {
+      this.updateSlides(res.data)
+    })
+    .catch(err => { // then print response status
+      toast.error('cannot get images list...'+err)
+      console.log(err)
+    })
   }
 
   checkMimeType = (event) => {
@@ -46,7 +59,7 @@ class App extends Component {
     // list allow mime type
     const types = ['image/png', 'image/jpeg', 'image/gif']
     // loop access array
-    for (var x = 0; x < files.length; x++) {
+    for (let x = 0; x < files.length; x++) {
       // compare file type find doesn't matach
       if (types.every(type => files[x].type !== type)) {
         // create error message and assign to container   
@@ -102,7 +115,7 @@ class App extends Component {
     for (var x = 0; x < this.state.selectedFile.length; x++) {
       data.append('file', this.state.selectedFile[x])
     }
-    axios.post("http://localhost:8080/upload", data, {
+    axios.post("/upload", data, {
       onUploadProgress: ProgressEvent => {
         this.setState({
           loaded: (ProgressEvent.loaded / ProgressEvent.total * 100),
@@ -146,47 +159,24 @@ class App extends Component {
         </Row>
         <Row>
           <Col></Col>
-          <Col xs={4}>
+          <Col xs={8}>
             <h2>And here are your pictures!</h2>
             <Slider
               className="slider"
-              asNavFor={this.state.nav1}
-              ref={slider => (this.slider2 = slider)}
-              slidesToShow={3}
+              slidesToShow={(this.state.slides.length > 2)?3:this.state.slides.length}
               swipeToSlide={true}
               focusOnSelect={true}
               lazyLoad={true}>
               {this.state.slides.map(function (slide) {
                 var link = "/image/" + slide
                 return (
-                  <Image className="slider-display" src={link}  rounded />
+                  <Image key={link} className="slider-display" src={link}  rounded />
                 );
               })}/}
             </Slider>
           </Col>
           <Col></Col>
         </Row>
-        <Row>
-          <Col>&nbsp;</Col>
-        </Row>
-        <Row>
-          <Col></Col>
-          <Col xs={10}>
-            <Slider
-              asNavFor={this.state.nav2}
-              ref={slider => (this.slider1 = slider)}
-              lazyLoad={true}>
-              {this.state.slides.map(function (slide) {
-                var link = "/image/" + slide
-                return (
-                  <Image className="slider-display" src={link}  rounded />
-                );
-              })}/}
-            </Slider>
-          </Col>
-          <Col></Col>
-        </Row>
-
       </Container>
 
 
