@@ -25,7 +25,7 @@ var s3 = new AWS.S3({ endpoint: s3Endpoint });
 // Upload functions
 var cloudStorage = multerS3({
   s3: s3,
-  bucket: "demo-photoalbum",
+  bucket: process.env.BUCKETNAME,
   contentType: multerS3.AUTO_CONTENT_TYPE,
   metadata: function (request, file, ab_callback) {
     ab_callback(null, { fieldname: file.fieldname });
@@ -45,8 +45,8 @@ app.get('/hello', function (req, res) {
 })
 
 // API - List bucket content
-app.get('/listimages/:bucket', function (req, res, next) {
-  s3.listObjectsV2({ Bucket: req.params.bucket }, function (err, data) {
+app.get('/listimages', function (req, res, next) {
+  s3.listObjectsV2({ Bucket: process.env.BUCKETNAME }, function (err, data) {
     if (err) {
       console.log(err, err.stack); // an error occurred
       res.send(err)
@@ -61,7 +61,7 @@ app.get('/listimages/:bucket', function (req, res, next) {
 
 // API - get image
 app.get('/image/:id', function (req, res, next) {
-  var s3Stream = s3.getObject({ Bucket: 'demo-photoalbum', Key: req.params.id }).createReadStream();
+  var s3Stream = s3.getObject({ Bucket: process.env.BUCKETNAME, Key: req.params.id }).createReadStream();
   // Listen for errors returned by the service
   s3Stream.on('error', function (err) {
     // NoSuchKey: The specified key does not exist

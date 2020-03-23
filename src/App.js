@@ -12,9 +12,7 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Image from 'react-bootstrap/Image';
-import Slider from "react-slick";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
+import Carousel from 'react-bootstrap/Carousel'
 
 
 
@@ -28,27 +26,31 @@ class App extends Component {
     }
   }
 
-      /* slides: ["1584624145438-Screenshot_20200214_093413.png", "1584624213225-Screenshot_20200214_093413.png", "1584624213232-Screenshot_20200214_093542.png", "1584624213241-Screenshot_20200214_093902.png"] */
+  /* slides: ["1584624145438-Screenshot_20200214_093413.png", "1584624213225-Screenshot_20200214_093413.png", "1584624213232-Screenshot_20200214_093542.png", "1584624213241-Screenshot_20200214_093902.png"] */
 
   componentDidMount() {
     this.loadImagesList();
   }
 
   updateSlides(imagesList) {
-    this.setState({
-      slides: imagesList
-    });
+    if (imagesList.length !== 0) {
+      this.setState({
+        slides: imagesList
+      });
+    }
+
   }
 
   loadImagesList() {
-    axios.get("/listimages/demo-photoalbum")
-    .then(res => {
-      this.updateSlides(res.data)
-    })
-    .catch(err => { // then print response status
-      toast.error('cannot get images list...'+err)
-      console.log(err)
-    })
+    axios.get("/listimages")
+      .then(res => {
+        console.log(res.data)
+        this.updateSlides(res.data)
+      })
+      .catch(err => { // then print response status
+        toast.error('cannot get images list...' + err)
+        console.log(err)
+      })
   }
 
   checkMimeType = (event) => {
@@ -73,6 +75,7 @@ class App extends Component {
     }
     return true;
   }
+
   maxSelectFile = (event) => {
     let files = event.target.files
     if (files.length > 3) {
@@ -83,6 +86,7 @@ class App extends Component {
     }
     return true;
   }
+
   checkFileSize = (event) => {
     let files = event.target.files
     let size = 2000000
@@ -99,36 +103,42 @@ class App extends Component {
     }
     return true;
   }
+
   onChangeHandler = event => {
     var files = event.target.files
     if (this.maxSelectFile(event) && this.checkMimeType(event) && this.checkFileSize(event)) {
       // if return true allow to setState
-      console.log(files)
       this.setState({
         selectedFile: files,
         loaded: 0
       })
     }
   }
+
   onClickHandler = () => {
     const data = new FormData()
-    for (var x = 0; x < this.state.selectedFile.length; x++) {
-      data.append('file', this.state.selectedFile[x])
-    }
-    axios.post("/upload", data, {
-      onUploadProgress: ProgressEvent => {
-        this.setState({
-          loaded: (ProgressEvent.loaded / ProgressEvent.total * 100),
+    if (this.state.selectedFile !== null) {
+      for (var x = 0; x < this.state.selectedFile.length; x++) {
+        data.append('file', this.state.selectedFile[x])
+      }
+      axios.post("/upload", data, {
+        onUploadProgress: ProgressEvent => {
+          this.setState({
+            loaded: (ProgressEvent.loaded / ProgressEvent.total * 100),
+          })
+        },
+      })
+        .then(res => { // then print response status
+          toast.success('upload success')
         })
-      },
-    })
-      .then(res => { // then print response status
-        toast.success('upload success')
-      })
-      .catch(err => { // then print response status
-        toast.error('upload fail')
-        console.log(err)
-      })
+        .catch(err => { // then print response status
+          toast.error('upload fail')
+          console.log(err)
+        })
+    } else {
+      toast.warn('Select a file first...')
+    }
+
   }
 
   render() {
@@ -159,21 +169,18 @@ class App extends Component {
         </Row>
         <Row>
           <Col></Col>
-          <Col xs={8}>
+          <Col xs={10}>
             <h2>And here are your pictures!</h2>
-            <Slider
-              className="slider"
-              slidesToShow={(this.state.slides.length > 2)?3:this.state.slides.length}
-              swipeToSlide={true}
-              focusOnSelect={true}
-              lazyLoad={true}>
-              {this.state.slides.map(function (slide) {
+            <Carousel>
+              {this.state.slides.map(function (slide, index) {
                 var link = "/image/" + slide
                 return (
-                  <Image key={link} className="slider-display" src={link}  rounded />
+                  <Carousel.Item>
+                    <Image key={index} className="d-block w-50" src={link} rounded />
+                  </Carousel.Item>
                 );
-              })}/}
-            </Slider>
+              })}
+            </Carousel>
           </Col>
           <Col></Col>
         </Row>
