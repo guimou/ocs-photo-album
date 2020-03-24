@@ -4,6 +4,7 @@
   "private": true,
   "proxy": "http://localhost:8080",
   "dependencies": {
+    "@kubernetes/client-node": "^0.11.1",
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.3.2",
     "@testing-library/user-event": "^7.1.2",
@@ -13,6 +14,7 @@
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
+    "js-yaml": "^3.13.1",
     "multer": "^1.4.2",
     "multer-s3": "^2.9.0",
     "node-uuid": "^1.4.8",
@@ -20,10 +22,9 @@
     "react-bootstrap": "^1.0.0-beta.17",
     "react-dom": "^16.13.0",
     "react-scripts": "3.4.0",
-    "react-slick": "^0.25.2",
     "react-toastify": "^5.5.0",
     "reactstrap": "^8.4.1",
-    "slick-carousel": "^1.8.1"
+    "uuid": "^7.0.2"
   },
   "scripts": {
     "start": "react-scripts start",

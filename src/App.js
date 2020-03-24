@@ -12,11 +12,12 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Image from 'react-bootstrap/Image';
-import Carousel from 'react-bootstrap/Carousel'
-
+import Carousel from 'react-bootstrap/Carousel';
+import { v4 as uuidv4 } from 'uuid';
 
 
 class App extends Component {
+
   constructor(props) {
     super(props);
     this.state = {
@@ -26,10 +27,22 @@ class App extends Component {
     }
   }
 
-  /* slides: ["1584624145438-Screenshot_20200214_093413.png", "1584624213225-Screenshot_20200214_093413.png", "1584624213232-Screenshot_20200214_093542.png", "1584624213241-Screenshot_20200214_093902.png"] */
+  identifyUser() {
+    var uid ='';
+    let stored_uid = localStorage.getItem('ocsphotoid');
+    if (stored_uid && (stored_uid !== '')) {
+      uid = stored_uid;
+    } else {
+      uid = uuidv4()
+      localStorage.setItem('ocsphotoid', uid)
+    }
+    return uid
+  }
+
 
   componentDidMount() {
-    this.loadImagesList();
+    this.identifyUser();
+    //this.loadImagesList();
   }
 
   updateSlides(imagesList) {
@@ -40,6 +53,8 @@ class App extends Component {
     }
 
   }
+
+
 
   loadImagesList() {
     axios.get("/listimages")
