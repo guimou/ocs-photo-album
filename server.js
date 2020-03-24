@@ -234,6 +234,8 @@ app.post('/upload', function (req, res) {
   })
 });
 
+app.use(express.static(path.join(__dirname, '/build')));
+
 app.listen(process.env.LISTEN_PORT, function () {
   console.log(`App running on port ${process.env.LISTEN_PORT}`);
 });
