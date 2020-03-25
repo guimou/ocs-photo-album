@@ -59,14 +59,14 @@ if (fs.existsSync(service_account_path)) {
   });
   kc.loadFromDefault();
 }
-//const api_client = kc.makeApiClient(k8s.CoreV1Api);
-//const api_client_custom = kc.makeApiClient(k8s.CustomObjectsApi);
+const api_client = kc.makeApiClient(k8s.CoreV1Api);
+const api_client_custom = kc.makeApiClient(k8s.CustomObjectsApi);
 
 function get_noobaa_config_maps() {
   let target_label = 'bucket-provisioner=openshift-storage.noobaa.io-obc';
   let config_maps_list = [];
   try {
-    var config_maps = this.api_client.list_namespaced_config_map(namespace, {label_selector: target_label})
+    var config_maps = api_client.list_namespaced_config_map(namespace, {label_selector: target_label})
   }
   catch (err) {
     if (err.status !== '404') {
