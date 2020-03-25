@@ -53,20 +53,24 @@ const service_account_path = '/var/run/secrets/kubernetes.io/serviceaccount';
 const path = require('path');
 var namespace = '';
 if (fs.existsSync(service_account_path)) {
-  fs.readFileSync(path.join(service_account_path, 'namespace'), (err, data) => {
-    if (err) throw err;
-    namespace = data.trim();
-  });
+  let data = fs.readFileSync(path.join(service_account_path, 'namespace'), 'utf8');
+  namespace = data.trim();
   kc.loadFromDefault();
 }
+
 const api_client = kc.makeApiClient(k8s.CoreV1Api);
 const api_client_custom = kc.makeApiClient(k8s.CustomObjectsApi);
 
-function get_noobaa_config_maps() {
+/* api_client.listNamespacedPod('ocs-photoalbum').then((res) => {
+  console.log(res.body);
+}); */
+
+
+async function get_noobaa_config_maps() {
   let target_label = 'bucket-provisioner=openshift-storage.noobaa.io-obc';
   let config_maps_list = [];
   try {
-    var config_maps = api_client.list_namespaced_config_map(namespace, {label_selector: target_label})
+    var config_maps = await api_client.list_namespaced_config_map(namespace, {label_selector: target_label})
   }
   catch (err) {
     if (err.status !== '404') {
