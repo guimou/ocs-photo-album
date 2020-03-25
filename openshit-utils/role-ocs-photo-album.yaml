@@ -1,0 +1,24 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app: ocs-photo-album
+  name: ocs-photo-album
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - events
+  - pods
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - objectbucket.io
+  resources:
+  - objectbucketclaims
+  verbs:
+  - create

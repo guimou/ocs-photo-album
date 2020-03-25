@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app: ocs-photo-album
+  name: ocs-photo-album
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ocs-photo-album
+subjects:
+- kind: ServiceAccount
+  name: default
