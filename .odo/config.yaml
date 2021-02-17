@@ -1,0 +1,12 @@
+kind: LocalConfig
+apiversion: odo.openshift.io/v1alpha1
+ComponentSettings:
+  Type: nodejs:10
+  SourceLocation: https://github.com/guimou/ocs-photo-album.git
+  Ref: master
+  SourceType: git
+  Ports:
+  - 8080/TCP
+  Application: photoalbum
+  Project: phototest
+  Name: photoalbum

@@ -21,28 +21,38 @@ class App extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      uid: null,
       selectedFile: null,
       loaded: 0,
       slides: []
     }
   }
 
-  identifyUser() {
-    var uid ='';
+  async createUser() {
+    var uid = ''
+    uid = uuidv4()
+    localStorage.setItem('ocsphotoid', uid)
+    await axios.get("/create_claim/" + uid)
+    return uid
+  }
+
+  async identifyUser() {
+    var uid = '';
     let stored_uid = localStorage.getItem('ocsphotoid');
     if (stored_uid && (stored_uid !== '')) {
       uid = stored_uid;
     } else {
-      uid = uuidv4()
-      localStorage.setItem('ocsphotoid', uid)
+      uid = await this.createUser()
     }
     return uid
   }
 
-
-  componentDidMount() {
-    this.identifyUser();
-    //this.loadImagesList();
+  async componentDidMount() {
+    var uid = await this.identifyUser()
+    this.setState({ uid: uid }, () => {
+      console.log(this.state.uid)
+      this.loadImagesList(this.state.uid);
+    })
   }
 
   updateSlides(imagesList) {
@@ -51,19 +61,26 @@ class App extends Component {
         slides: imagesList
       });
     }
-
   }
 
-
-
-  loadImagesList() {
-    axios.get("/listimages")
+  loadImagesList(uid) {
+    axios.get("/bucket_info/" + uid)
+      .then(res => {
+        console.log(res.data)
+        toast.info('Your bucket is: ' + res.data[0])
+      })
+      .catch(err => { // then print response status
+        toast.error('There is a problem with your bucket, see the console for error.')
+        console.log(err)
+        return
+      })
+    axios.get("/listimages/" + uid)
       .then(res => {
         console.log(res.data)
         this.updateSlides(res.data)
       })
       .catch(err => { // then print response status
-        toast.error('cannot get images list...' + err)
+        toast.error('Cannot get images list, see the console for error.')
         console.log(err)
       })
   }
@@ -136,7 +153,7 @@ class App extends Component {
       for (var x = 0; x < this.state.selectedFile.length; x++) {
         data.append('file', this.state.selectedFile[x])
       }
-      axios.post("/upload", data, {
+      axios.post("/upload/" + this.state.uid, data, {
         onUploadProgress: ProgressEvent => {
           this.setState({
             loaded: (ProgressEvent.loaded / ProgressEvent.total * 100),
@@ -145,6 +162,15 @@ class App extends Component {
       })
         .then(res => { // then print response status
           toast.success('upload success')
+          axios.get("/listimages/" + this.state.uid)
+            .then(res => {
+              console.log(res.data)
+              this.updateSlides(res.data)
+            })
+            .catch(err => { // then print response status
+              toast.error('Cannot get images list, see the console for error.')
+              console.log(err)
+            })
         })
         .catch(err => { // then print response status
           toast.error('upload fail')
@@ -157,6 +183,11 @@ class App extends Component {
   }
 
   render() {
+    if (!this.state.uid) {
+      return <div />
+    }
+
+    // uid has been set, do a normal render
     return (
       <Container className="background">
         <Row>
@@ -174,7 +205,7 @@ class App extends Component {
             </FormGroup>
             <ToastContainer />
             <FormGroup>
-              <ProgressBar max="100" color="success" value={this.state.loaded} >{Math.round(this.state.loaded, 2)}%</ProgressBar>
+              <ProgressBar className="prog" max="100" color="success" value={this.state.loaded} >{Math.round(this.state.loaded, 2)}%</ProgressBar>
             </FormGroup>
             <Button type="button" className="btn btn-success btn-block" onClick={this.onClickHandler}>Upload</Button>
           </Form></Col>
@@ -187,8 +218,8 @@ class App extends Component {
           <Col xs={10}>
             <h2>And here are your pictures!</h2>
             <Carousel>
-              {this.state.slides.map(function (slide, index) {
-                var link = "/image/" + slide
+              {this.state.slides.map((slide, index) => {
+                var link = "/image/" + this.state.uid + "/" + slide
                 return (
                   <Carousel.Item>
                     <Image key={index} className="d-block w-50" src={link} rounded />

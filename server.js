@@ -13,34 +13,15 @@ require('dotenv').config();
 
 // Create the S3 client
 const AWS = require('aws-sdk');
+const s3Endpoint = process.env.S3_ENDPOINT;
 // AWS.config.logger = console; // Debug purposes
 AWS.config.update({
   region: '',
-  accessKeyId: process.env.ACCESS_KEY_ID,
-  secretAccessKey: process.env.SECRET_ACCESS_KEY,
   sslEnabled: (process.env.S3_ENDPOINT.includes('https') ? true : false),
   s3ForcePathStyle: true,
   signatureVersion: 'v4'
 });
-const s3Endpoint = process.env.S3_ENDPOINT;
-var s3 = new AWS.S3({ endpoint: s3Endpoint });
 
-
-// Upload functions
-var cloudStorage = multerS3({
-  s3: s3,
-  bucket: process.env.BUCKETNAME,
-  contentType: multerS3.AUTO_CONTENT_TYPE,
-  metadata: function (request, file, ab_callback) {
-    ab_callback(null, { fieldname: file.fieldname });
-  },
-  key: function (request, file, ab_callback) {
-    var newFileName = Date.now() + "-" + file.originalname;
-    ab_callback(null, newFileName);
-  },
-});
-
-var upload = multer({ storage: cloudStorage }).array('file');
 
 /**************************/
 /* Kubernetes functions   */
@@ -61,69 +42,59 @@ if (fs.existsSync(service_account_path)) {
 const api_client = kc.makeApiClient(k8s.CoreV1Api);
 const api_client_custom = kc.makeApiClient(k8s.CustomObjectsApi);
 
-/* api_client.listNamespacedPod('ocs-photoalbum').then((res) => {
-  console.log(res.body);
-}); */
-
-
-async function get_noobaa_config_maps() {
-  let target_label = 'bucket-provisioner=openshift-storage.noobaa.io-obc';
-  let config_maps_list = [];
-  try {
-    var config_maps = await api_client.list_namespaced_config_map(namespace, {label_selector: target_label})
-  }
-  catch (err) {
-    if (err.status !== '404') {
-      console.log(err);
-    }
-    return config_maps_list
-  }
-  for (const cm in config_maps.items) {
-    config_maps_list.append(cm.metadata.name)
-  }
-  console.log(`Found these Config Maps: ${config_maps_list}`);
-  return config_maps_list
-}
-
-/* function read_config_map(config_map_name, key_name = "profiles") {
-  try {
-    var config_map = api_client.read_namespaced_config_map(config_map_name, namespace)
-  }
-  catch (err) {
-    if (err.status !== '404') {
-      console.log(err);
-    }
-    return {}
-  }
-  var config_map_yaml = yaml.safe_load(config_map.name)
-  return config_map_yaml
-} */
 
 function escape(text) {
   return text.replace(/[^a-zA-Z0-9]+/g, "-")
 }
 
-function load_keys(claim_name) {
-  console.log("load_keys: " + claim_name)
-  let config_map = this.api_client.read_namespaced_config_map(claim_name, namespace)
-  let bucket_name = this.yaml.safe_load(config_map.data["BUCKET_NAME"])
-  console.log(bucket_name)
-  let secret = this.api_client.read_namespaced_secret(claim_name, namespace)
-  let key = decodeURI(yaml.safe_load(secret.data["AWS_ACCESS_KEY_ID"])).toString('ascii')
-  let key_secret = decodeURI(yaml.safe_load(secret.data["AWS_SECRET_ACCESS_KEY"])).toString('ascii')
-  console.log(key)
-  return [bucket_name, key, key_secret]
-}
 
 const sleep = (milliseconds) => {
   return new Promise(resolve => setTimeout(resolve, milliseconds))
 }
 
-function create_claim(username) {
+async function get_bucket_config_maps() {
+  let target_label = 'bucket-provisioner=openshift-storage.ceph.rook.io-bucket';
+  const config_maps_list = await api_client.listNamespacedConfigMap(namespace, null, null, null, null, target_label).then((res) => {
+    let config_maps = res.body;
+    let config_maps_list = [];
+    for (var i = 0; i < config_maps.items.length; i++) {
+      config_maps_list.push(config_maps.items[i].metadata.name)
+    }
+    console.log(`Found these Config Maps: ${config_maps_list}`);
+    return config_maps_list
+  })
+    .catch((err) => {
+      console.log(err)
+    })
+  return config_maps_list
+}
+
+async function get_bucket_info(uid) {
+  let data = []
+  await api_client.readNamespacedConfigMap('ocs-photo-album-' + uid, namespace).then((res) => {
+    let bucket_name = res.body.data["BUCKET_NAME"]
+    data.push(bucket_name)
+  })
+    .catch((err) => {
+      //console.log(err)
+      console.log('erreur get')
+    })
+  await api_client.readNamespacedSecret('ocs-photo-album-' + uid, namespace).then((res) => {
+    let key = Buffer.from(res.body.data["AWS_ACCESS_KEY_ID"], 'base64').toString()
+    let key_secret = Buffer.from(res.body.data["AWS_SECRET_ACCESS_KEY"], 'base64').toString()
+    data.push(key)
+    data.push(key_secret)
+  })
+    .catch((err) => {
+      //console.log(err)
+      console.log('erreur get')
+    })
+  return data
+}
+
+
+async function create_claim(uid) {
   console.log("create claim");
-  let user_bucket_name = ''
-  let aws_access_key = ''
-  let aws_secret_access_key = ''
   let group = 'objectbucket.io'
   let version = 'v1alpha1'
   let plural = 'objectbucketclaims'
@@ -132,37 +103,23 @@ function create_claim(username) {
     "apiVersion": "objectbucket.io/v1alpha1",
     "kind": "ObjectBucketClaim",
     "metadata": {
-      "name": "odh-bucket-' + username + '"
+      "name": "ocs-photo-album-${uid}"
       },
     "spec": {
-      "generateBucketName": "odh",
-      "storageClassName": "openshift-storage.noobaa.io"
+      "generateBucketName": "ocs-photo-album-${uid}",
+      "storageClassName": "ocs-storagecluster-ceph-rgw"
       }
     }
     `;
   console.log(JSON.parse(body));
-  try {
-    let api_response = this.api_client_custom.create_namespaced_custom_object(group, version, namespace, plural, JSON.parse(body), {pretty: true})
-    console.log(api_response)
-  }
-  catch (err) {
-    console.log(`Exception when calling CustomObjectsApi->create_namespaced_custom_object: ${err}\n`);
-  }
-  var cm_name = "odh-bucket-" + username
-  var attempts = 0
-  while (attempts < 5) {
-    try {
-      [user_bucket_name, aws_access_key, aws_secret_access_key] = load_keys(cm_name)
-    }
-    catch {
-      attempts += 1
-      sleep(2000).then(() => {
-        console.log("retry");
-      })
-    }
-  }
-  return [user_bucket_name, aws_access_key, aws_secret_access_key]
+  await api_client_custom.createNamespacedCustomObject(group, version, namespace, plural, JSON.parse(body), { pretty: true }).then((res) => {
+    console.log('Bucket created')
+  })
+    .catch((err) => {
+      console.log(err)
+    })
 }
+
 
 /**************************/
 /* API section            */
@@ -177,19 +134,37 @@ app.get('/escape/:text', function (req, res) {
   return res.send(escape(req.params.text))
 })
 
+
 // API - get config_maps test
-app.get('/cm', function (req, res) {
-  return res.send(get_noobaa_config_maps())
+app.get('/cm', async (req, res, next) => {
+  let cm_list = await get_bucket_config_maps()
+  res.json(cm_list)
 })
 
-// API - claim name test
-app.get('/claime/:claimname', function (req, res) {
-  return res.send(load_keys(req.params.claimname))
+// API - bucket_info
+app.get('/bucket_info/:uid', async (req, res, next) => {
+  let data = await get_bucket_info(req.params.uid)
+  res.send(data)
 })
+
+// API - create_claim
+app.get('/create_claim/:uid', async (req, res, next) => {
+  await Promise.all([create_claim(req.params.uid), sleep(5000)])
+  let data = await get_bucket_info(req.params.uid)
+  res.send(data)
+})
+
 
 // API - List bucket content
-app.get('/listimages', function (req, res, next) {
-  s3.listObjectsV2({ Bucket: process.env.BUCKETNAME }, function (err, data) {
+app.get('/listimages/:uid', async function (req, res, next) {
+  let data = await get_bucket_info(req.params.uid)
+  AWS.config.update({
+    accessKeyId: data[1],
+    secretAccessKey: data[2],
+  });
+  var s3 = new AWS.S3({ endpoint: s3Endpoint });
+
+  s3.listObjectsV2({ Bucket: data[0] }, function (err, data) {
     if (err) {
       console.log(err, err.stack); // an error occurred
       res.send(err)
@@ -203,8 +178,15 @@ app.get('/listimages', function (req, res, next) {
 })
 
 // API - get image
-app.get('/image/:id', function (req, res, next) {
-  var s3Stream = s3.getObject({ Bucket: process.env.BUCKETNAME, Key: req.params.id }).createReadStream();
+app.get('/image/:uid/:id', async function (req, res, next) {
+  let data = await get_bucket_info(req.params.uid)
+  AWS.config.update({
+    accessKeyId: data[1],
+    secretAccessKey: data[2],
+  });
+  var s3 = new AWS.S3({ endpoint: s3Endpoint });
+
+  var s3Stream = s3.getObject({ Bucket: data[0], Key: req.params.id }).createReadStream();
   // Listen for errors returned by the service
   s3Stream.on('error', function (err) {
     // NoSuchKey: The specified key does not exist
@@ -221,7 +203,30 @@ app.get('/image/:id', function (req, res, next) {
 
 
 // API - upload images
-app.post('/upload', function (req, res) {
+app.post('/upload/:uid', async function (req, res) {
+  let data = await get_bucket_info(req.params.uid)
+  AWS.config.update({
+    accessKeyId: data[1],
+    secretAccessKey: data[2],
+  });
+  var s3 = new AWS.S3({ endpoint: s3Endpoint });
+
+  // Upload functions
+  var cloudStorage = multerS3({
+    s3: s3,
+    bucket: data[0],
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    metadata: function (request, file, ab_callback) {
+      ab_callback(null, { fieldname: file.fieldname });
+    },
+    key: function (request, file, ab_callback) {
+      var newFileName = Date.now() + "-" + file.originalname;
+      ab_callback(null, newFileName);
+    },
+  });
+
+  var upload = multer({ storage: cloudStorage }).array('file');
+
   upload(req, res, function (err) {
     if (err instanceof multer.MulterError) {
       console.log(err)
