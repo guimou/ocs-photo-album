@@ -1,19 +1,19 @@
-import React, { Component } from 'react';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import axios from 'axios';
-import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import Form from 'react-bootstrap/Form';
-import ProgressBar from 'react-bootstrap/ProgressBar';
-import Button from 'react-bootstrap/Button';
-import FormGroup from 'react-bootstrap/FormGroup';
-import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
-import Image from 'react-bootstrap/Image';
-import Carousel from 'react-bootstrap/Carousel';
+import { ToastContainer, toast } from 'react-toastify';
 import { v4 as uuidv4 } from 'uuid';
+import axios from 'axios';
+import Button from 'react-bootstrap/Button';
+import Carousel from 'react-bootstrap/Carousel';
+import Col from 'react-bootstrap/Col';
+import Container from 'react-bootstrap/Container';
+import Form from 'react-bootstrap/Form';
+import FormGroup from 'react-bootstrap/FormGroup';
+import Image from 'react-bootstrap/Image';
+import ProgressBar from 'react-bootstrap/ProgressBar';
+import React, { Component } from 'react';
+import Row from 'react-bootstrap/Row';
 
 
 class App extends Component {
@@ -28,6 +28,10 @@ class App extends Component {
     }
   }
 
+ /**
+ * Creates a new user id, stores it in the LocalStorage and create the ObjectBucketClaim
+ * @return {string} uid of the newly created user
+ */ 
   async createUser() {
     var uid = ''
     uid = uuidv4()
@@ -36,6 +40,10 @@ class App extends Component {
     return uid
   }
 
+  /**
+  * Identify user based on the LocalStorage, or creates it
+  * @return {string} uid of the user
+  */
   async identifyUser() {
     var uid = '';
     let stored_uid = localStorage.getItem('ocsphotoid');
@@ -47,6 +55,9 @@ class App extends Component {
     return uid
   }
 
+  /**
+  * Identifies the user at startup and loads the image list 
+  */  
   async componentDidMount() {
     var uid = await this.identifyUser()
     this.setState({ uid: uid }, () => {
@@ -55,6 +66,11 @@ class App extends Component {
     })
   }
 
+
+  /**
+  * Updates the imageslist in the state
+  * @param {Array} imagesList list of the images
+  */
   updateSlides(imagesList) {
     if (imagesList.length !== 0) {
       this.setState({
@@ -63,6 +79,10 @@ class App extends Component {
     }
   }
 
+  /**
+  * Loads the imageslist from the backend for a specific user
+  * @param {string} uid id of the user
+  */
   loadImagesList(uid) {
     axios.get("/bucket_info/" + uid)
       .then(res => {
@@ -85,6 +105,11 @@ class App extends Component {
       })
   }
 
+  /**
+  * Checks if it's an authorized image format
+  * @param {event} event Event sent by the file selector
+  * @return {Boolean} always returns true as it automatically sends a message to invalidate file
+  */
   checkMimeType = (event) => {
     //getting file object
     let files = event.target.files
@@ -108,6 +133,11 @@ class App extends Component {
     return true;
   }
 
+  /**
+  * Checks if there is a  max of 3 files to upload
+  * @param {event} event Event sent by the file selector
+  * @return {Boolean} always returns true as it automatically sends a message to invalidate file
+  */
   maxSelectFile = (event) => {
     let files = event.target.files
     if (files.length > 3) {
@@ -119,6 +149,11 @@ class App extends Component {
     return true;
   }
 
+  /**
+  * Checks if the file is less than max size
+  * @param {event} event Event sent by the file selector
+  * @return {Boolean} always returns true as it automatically sends a message to invalidate file
+  */
   checkFileSize = (event) => {
     let files = event.target.files
     let size = 2000000
@@ -136,6 +171,10 @@ class App extends Component {
     return true;
   }
 
+  /**
+  * Handler for file added throught the selector
+  * @param {event} event Event sent by the file selector
+  */
   onChangeHandler = event => {
     var files = event.target.files
     if (this.maxSelectFile(event) && this.checkMimeType(event) && this.checkFileSize(event)) {
@@ -147,6 +186,10 @@ class App extends Component {
     }
   }
 
+  /**
+  * Handler for click on the upload button. Upload file list and refresh state
+  * @param {event} event Event sent by the file selector
+  */
   onClickHandler = () => {
     const data = new FormData()
     if (this.state.selectedFile !== null) {
@@ -182,6 +225,9 @@ class App extends Component {
 
   }
 
+  /**
+  * UI
+  */
   render() {
     if (!this.state.uid) {
       return <div />

@@ -1,17 +1,20 @@
+/**************************/
+/* General Init           */
+/**************************/
+
+// Libraries
+const cors = require('cors');
 const express = require('express');
-const app = express();
+const fs = require('fs');
 const multer = require('multer');
 const multerS3 = require('multer-s3');
-const cors = require('cors');
-const fs = require('fs');
+
+// Init app
+const app = express();
 app.use(cors())
 require('dotenv').config();
 
-/**************************/
-/* S3 functions           */
-/**************************/
-
-// Create the S3 client
+// Initialize the S3 client
 const AWS = require('aws-sdk');
 const s3Endpoint = process.env.S3_ENDPOINT;
 // AWS.config.logger = console; // Debug purposes
@@ -24,11 +27,10 @@ AWS.config.update({
 
 
 /**************************/
-/* Kubernetes functions   */
+/* Kubernetes Init        */
 /**************************/
 
 const k8s = require('@kubernetes/client-node');
-const yaml = require('js-yaml');
 const kc = new k8s.KubeConfig();
 const service_account_path = '/var/run/secrets/kubernetes.io/serviceaccount';
 const path = require('path');
@@ -42,16 +44,21 @@ if (fs.existsSync(service_account_path)) {
 const api_client = kc.makeApiClient(k8s.CoreV1Api);
 const api_client_custom = kc.makeApiClient(k8s.CustomObjectsApi);
 
+/**************************/
+/* Functions              */
+/**************************/
 
-function escape(text) {
-  return text.replace(/[^a-zA-Z0-9]+/g, "-")
-}
-
-
+/**
+ * Sleep Helper (to wait for ConfigMap and Secret to be created)
+ * @param  {integer} milliseconds time to wait 
+ */
 const sleep = (milliseconds) => {
   return new Promise(resolve => setTimeout(resolve, milliseconds))
 }
 
+/**
+ * Demo function to retrieve all the ConfigMap with a specific label
+ */
 async function get_bucket_config_maps() {
   let target_label = 'bucket-provisioner=openshift-storage.ceph.rook.io-bucket';
   const config_maps_list = await api_client.listNamespacedConfigMap(namespace, null, null, null, null, target_label).then((res) => {
@@ -69,6 +76,11 @@ async function get_bucket_config_maps() {
   return config_maps_list
 }
 
+/**
+ * Retrieves information on a bucketclaim for a specific user
+ * @param  {string} uid uid of the user
+ * @return {Array} [bucket_name, access_key, secret_key] 
+ */ 
 async function get_bucket_info(uid) {
   let data = []
   await api_client.readNamespacedConfigMap('ocs-photo-album-' + uid, namespace).then((res) => {
@@ -92,7 +104,10 @@ async function get_bucket_info(uid) {
   return data
 }
 
-
+/**
+ * Creates a bucketclaim for a specific user
+ * @param  {string} uid uid of the user 
+ */ 
 async function create_claim(uid) {
   console.log("create claim");
   let group = 'objectbucket.io'
@@ -129,11 +144,6 @@ async function create_claim(uid) {
 app.get('/hello', function (req, res) {
   return res.send('Hello Server')
 })
-// API - escape test
-app.get('/escape/:text', function (req, res) {
-  return res.send(escape(req.params.text))
-})
-
 
 // API - get config_maps test
 app.get('/cm', async (req, res, next) => {
@@ -241,6 +251,10 @@ app.post('/upload/:uid', async function (req, res) {
     // Everything went fine.
   })
 });
+
+/**************************/
+/* Launch application     */
+/**************************/
 
 app.use(express.static(path.join(__dirname, '/build')));
 
