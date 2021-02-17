@@ -1,0 +1,76 @@
+kind: DeploymentConfig
+apiVersion: apps.openshift.io/v1
+metadata:
+  annotations:
+    app.openshift.io/vcs-ref: master
+    app.openshift.io/vcs-uri: 'https://github.com/guimou/ocs-photo-album.git'
+  name: ocs-photo-album-git
+  labels:
+    app: ocs-photo-album-git
+    app.kubernetes.io/component: ocs-photo-album-git
+    app.kubernetes.io/instance: ocs-photo-album-git
+    app.kubernetes.io/name: nodejs
+    app.kubernetes.io/part-of: ocs-photo-album
+    app.openshift.io/runtime: nodejs
+    app.openshift.io/runtime-version: 12-ubi8
+spec:
+  strategy:
+    type: Rolling
+    rollingParams:
+      updatePeriodSeconds: 1
+      intervalSeconds: 1
+      timeoutSeconds: 600
+      maxUnavailable: 25%
+      maxSurge: 25%
+    resources: {}
+    activeDeadlineSeconds: 21600
+  triggers:
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+          - ocs-photo-album-git
+        from:
+          kind: ImageStreamTag
+          namespace: ocs-photo-album
+          name: 'ocs-photo-album-git:latest'
+    - type: ConfigChange
+  replicas: 1
+  revisionHistoryLimit: 10
+  test: false
+  selector:
+    app: ocs-photo-album-git
+    deploymentconfig: ocs-photo-album-git
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: ocs-photo-album-git
+        deploymentconfig: ocs-photo-album-git
+    spec:
+      containers:
+        - name: ocs-photo-album-git
+          image: >-
+            image-registry.openshift-image-registry.svc:5000/ocs-photo-album/ocs-photo-album-git:latest
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env:
+            - name: S3_ENDPOINT
+              value: >-
+                http://rook-ceph-rgw-ocs-storagecluster-cephobjectstore.openshift-storage.svc.cluster.local
+            - name: LISTEN_PORT
+              value: '8080'
+            - name: DEV_MODE
+              value: 'false'
+            - name: NODE_ENV
+              value: production
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler

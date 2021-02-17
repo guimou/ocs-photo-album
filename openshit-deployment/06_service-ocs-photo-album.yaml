@@ -1,0 +1,25 @@
+kind: Service
+apiVersion: v1
+metadata:
+  annotations:
+    app.openshift.io/vcs-ref: master
+    app.openshift.io/vcs-uri: 'https://github.com/guimou/ocs-photo-album.git'
+  name: ocs-photo-album-git
+  labels:
+    app: ocs-photo-album-git
+    app.kubernetes.io/component: ocs-photo-album-git
+    app.kubernetes.io/instance: ocs-photo-album-git
+    app.kubernetes.io/name: nodejs
+    app.kubernetes.io/part-of: ocs-photo-album
+    app.openshift.io/runtime: nodejs
+    app.openshift.io/runtime-version: 12-ubi8
+spec:
+  ports:
+    - name: 8080-tcp
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: ocs-photo-album-git
+    deploymentconfig: ocs-photo-album-git
+  sessionAffinity: None
